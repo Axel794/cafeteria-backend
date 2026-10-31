@@ -35,6 +35,13 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
+        <!-- Lombok para simplificar código con anotaciones -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
         <!-- Base de datos: H2 para desarrollo local, PostgreSQL con el perfil "postgres" -->
         <dependency>
             <groupId>com.h2database</groupId>

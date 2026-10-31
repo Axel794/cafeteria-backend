@@ -1,8 +1,7 @@
 target/
-data/
-*.mv.db
-*.trace.db
 .idea/
 *.iml
 .vscode/
-HELP.md
+data/
+*.mv.db
+*.trace.db
