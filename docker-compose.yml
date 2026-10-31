@@ -1,0 +1,17 @@
+# PostgreSQL local para el perfil "postgres".
+# Uso:  docker compose up -d
+services:
+  db:
+    image: postgres:16
+    container_name: cafeteria-db
+    environment:
+      POSTGRES_DB: cafeteria
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - cafeteria-data:/var/lib/postgresql/data
+
+volumes:
+  cafeteria-data:
