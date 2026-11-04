@@ -85,6 +85,38 @@ public class PedidoService {
         return aRespuesta(buscar(id));
     }
 
+    /** HU04: comandas para el panel del barista, las mas antiguas primero; filtro opcional por estado. */
+    @Transactional(readOnly = true)
+    public List<PedidoResponse> listar(EstadoPedido estado) {
+        List<Pedido> pedidos = (estado == null)
+                ? pedidoRepository.findAllByOrderByFechaHoraAsc()
+                : pedidoRepository.findByEstadoOrderByFechaHoraAsc(estado);
+        return pedidos.stream().map(this::aRespuesta).toList();
+    }
+
+    /**
+     * HU05 / RF08: el estado solo avanza un paso a la vez
+     * (PENDIENTE -> EN_PREPARACION -> LISTO -> ENTREGADO); no se permiten saltos ni retrocesos.
+     */
+    @Transactional
+    public PedidoResponse cambiarEstado(Long id, EstadoPedido nuevoEstado) {
+        Pedido pedido = buscar(id);
+        EstadoPedido actual = pedido.getEstado();
+
+        if (actual == EstadoPedido.ENTREGADO) {
+            throw new ReglaNegocioException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "El pedido ya fue entregado y no admite mas cambios de estado");
+        }
+        EstadoPedido siguiente = EstadoPedido.values()[actual.ordinal() + 1];
+        if (nuevoEstado != siguiente) {
+            throw new ReglaNegocioException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "No se puede pasar de " + actual + " a " + nuevoEstado
+                            + "; el siguiente estado permitido es " + siguiente);
+        }
+        pedido.setEstado(siguiente);
+        return aRespuesta(pedidoRepository.save(pedido));
+    }
+
     /** RF06: estado actual del pedido con un mensaje listo para mostrar al cliente. */
     @Transactional(readOnly = true)
     public TrackerResponse tracker(Long id) {

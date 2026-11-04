@@ -10,4 +10,6 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
     List<Producto> findAllByOrderByNombreAsc();
 
     List<Producto> findByCategoriaIdOrderByNombreAsc(Long categoriaId);
+
+    boolean existsByCategoriaId(Long categoriaId);
 }

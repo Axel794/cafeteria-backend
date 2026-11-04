@@ -1,13 +1,21 @@
 {
   "info": {
-    "name": "Cafeteria backend - Practica de campo 2",
-    "description": "Pruebas de los endpoints GET/POST iniciales. Ejecutar la coleccion completa en orden (Runner) con la aplicacion levantada en {{baseUrl}}.",
+    "name": "Cafeteria backend - Practica de campo 3",
+    "description": "CRUD, validaciones y seguridad (JWT). Ejecutar la coleccion completa EN ORDEN con el Runner y la aplicacion levantada en {{baseUrl}} (usuarios de prueba: admin / Admin123* y barista / Barista123*). Los dos primeros requests guardan los tokens en variables de coleccion.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
       "key": "baseUrl",
       "value": "http://localhost:8080"
+    },
+    {
+      "key": "tokenAdmin",
+      "value": ""
+    },
+    {
+      "key": "tokenBarista",
+      "value": ""
     },
     {
       "key": "catNombre",
@@ -18,7 +26,15 @@
       "value": ""
     },
     {
+      "key": "categoriaTmpId",
+      "value": ""
+    },
+    {
       "key": "productoId",
+      "value": ""
+    },
+    {
+      "key": "productoTmpId",
       "value": ""
     },
     {
@@ -28,7 +44,171 @@
   ],
   "item": [
     {
-      "name": "01 GET categorias",
+      "name": "01 POST login administrador (200 + token)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"username\": \"admin\", \"password\": \"Admin123*\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const j = pm.response.json();",
+              "pm.test('Devuelve token y rol ADMINISTRADOR', () => { pm.expect(j.token).to.be.a('string').and.not.empty; pm.expect(j.rol).to.eql('ADMINISTRADOR'); });",
+              "pm.collectionVariables.set('tokenAdmin', j.token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 POST login barista (200 + token)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"username\": \"barista\", \"password\": \"Barista123*\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const j = pm.response.json();",
+              "pm.test('Rol BARISTA', () => pm.expect(j.rol).to.eql('BARISTA'));",
+              "pm.collectionVariables.set('tokenBarista', j.token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 POST login con contrasena incorrecta (401)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"username\": \"admin\", \"password\": \"incorrecta\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 401', () => pm.response.to.have.status(401));",
+              "pm.test('Mensaje generico', () => pm.expect(pm.response.json().mensaje).to.eql('Usuario o contrasena incorrectos'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 POST login sin datos (400)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"username\": \"\", \"password\": \"\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 400', () => pm.response.to.have.status(400));",
+              "pm.test('Informa el detalle', () => pm.expect(pm.response.json().detalles).to.be.an('array').that.is.not.empty);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 GET categorias (publico)",
       "request": {
         "method": "GET",
         "header": [],
@@ -58,13 +238,97 @@
       ]
     },
     {
-      "name": "02 POST categoria (crear)",
+      "name": "06 POST categoria sin token (401)",
       "request": {
         "method": "POST",
         "header": [
           {
             "key": "Content-Type",
             "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/categorias",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "categorias"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"Sin permiso\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 401', () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 POST categoria como barista (403)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenBarista}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/categorias",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "categorias"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"Sin permiso\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 403', () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 POST categoria como administrador (201)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAdmin}}"
           }
         ],
         "url": {
@@ -108,13 +372,17 @@
       ]
     },
     {
-      "name": "03 POST categoria duplicada (409)",
+      "name": "09 POST categoria duplicada (409)",
       "request": {
         "method": "POST",
         "header": [
           {
             "key": "Content-Type",
             "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAdmin}}"
           }
         ],
         "url": {
@@ -146,13 +414,135 @@
       ]
     },
     {
-      "name": "04 POST producto (crear)",
+      "name": "10 PUT categoria (200)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAdmin}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/categorias/{{categoriaId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "categorias",
+            "{{categoriaId}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"{{catNombre}} editada\", \"activa\": true}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Nombre actualizado', () => pm.expect(pm.response.json().nombre).to.include('editada'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 PUT categoria inexistente (404)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAdmin}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/categorias/999999",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "categorias",
+            "999999"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"Fantasma\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 GET categoria por id (200)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/categorias/{{categoriaId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "categorias",
+            "{{categoriaId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Coincide el id', () => pm.expect(pm.response.json().id).to.eql(Number(pm.collectionVariables.get('categoriaId'))));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 POST producto como administrador (201)",
       "request": {
         "method": "POST",
         "header": [
           {
             "key": "Content-Type",
             "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAdmin}}"
           }
         ],
         "url": {
@@ -187,13 +577,17 @@
       ]
     },
     {
-      "name": "05 POST producto con precio 0 (400)",
+      "name": "14 POST producto con precio 0 (400)",
       "request": {
         "method": "POST",
         "header": [
           {
             "key": "Content-Type",
             "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAdmin}}"
           }
         ],
         "url": {
@@ -219,20 +613,24 @@
             "type": "text/javascript",
             "exec": [
               "pm.test('Status 400', () => pm.response.to.have.status(400));",
-              "pm.test('Informa el detalle del error', () => pm.expect(pm.response.json().detalles.length).to.be.above(0));"
+              "pm.test('Informa el detalle del error', () => pm.expect(pm.response.json().detalles).to.be.an('array').that.is.not.empty);"
             ]
           }
         }
       ]
     },
     {
-      "name": "06 POST producto con categoria inexistente (404)",
+      "name": "15 POST producto con categoria inexistente (404)",
       "request": {
         "method": "POST",
         "header": [
           {
             "key": "Content-Type",
             "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAdmin}}"
           }
         ],
         "url": {
@@ -264,7 +662,87 @@
       ]
     },
     {
-      "name": "07 GET productos",
+      "name": "16 POST producto sin token (401)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/productos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "productos"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"Sin permiso\", \"precio\": 10.00, \"categoriaId\": {{categoriaId}}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 401', () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17 POST producto como barista (403)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenBarista}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/productos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "productos"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"Sin permiso\", \"precio\": 10.00, \"categoriaId\": {{categoriaId}}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 403', () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "18 GET productos (publico)",
       "request": {
         "method": "GET",
         "header": [],
@@ -294,7 +772,7 @@
       ]
     },
     {
-      "name": "08 GET productos por categoria (solo disponibles)",
+      "name": "19 GET productos por categoria (solo disponibles)",
       "request": {
         "method": "GET",
         "header": [],
@@ -327,14 +805,14 @@
             "type": "text/javascript",
             "exec": [
               "pm.test('Status 200', () => pm.response.to.have.status(200));",
-              "pm.test('Incluye el producto creado', () => pm.expect(pm.response.json().length).to.be.above(0));"
+              "pm.test('Incluye el producto creado', () => pm.expect(pm.response.json().map(p => p.id)).to.include(Number(pm.collectionVariables.get('productoId'))));"
             ]
           }
         }
       ]
     },
     {
-      "name": "09 GET producto por id",
+      "name": "20 GET producto por id (200)",
       "request": {
         "method": "GET",
         "header": [],
@@ -365,7 +843,7 @@
       ]
     },
     {
-      "name": "10 GET producto inexistente (404)",
+      "name": "21 GET producto inexistente (404)",
       "request": {
         "method": "GET",
         "header": [],
@@ -395,7 +873,176 @@
       ]
     },
     {
-      "name": "11 POST pedido LOCAL (crear)",
+      "name": "22 PUT producto: cambia precio (200)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAdmin}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/productos/{{productoId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "productos",
+            "{{productoId}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"Latte de prueba\", \"descripcion\": \"Espresso con leche\", \"precio\": 15.00, \"categoriaId\": {{categoriaId}}, \"disponible\": true}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Precio actualizado a 15', () => pm.expect(pm.response.json().precio).to.eql(15));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "23 PUT producto con precio negativo (400)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAdmin}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/productos/{{productoId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "productos",
+            "{{productoId}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"Latte de prueba\", \"precio\": -5, \"categoriaId\": {{categoriaId}}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 400', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "24 PUT producto inexistente (404)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAdmin}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/productos/999999",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "productos",
+            "999999"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"Fantasma\", \"precio\": 10.00, \"categoriaId\": {{categoriaId}}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "25 PUT producto sin token (401)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/productos/{{productoId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "productos",
+            "{{productoId}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"X\", \"precio\": 10.00, \"categoriaId\": {{categoriaId}}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 401', () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "26 POST pedido LOCAL (201, publico)",
       "request": {
         "method": "POST",
         "header": [
@@ -429,7 +1076,7 @@
               "pm.test('Status 201', () => pm.response.to.have.status(201));",
               "const j = pm.response.json();",
               "pm.test('Estado inicial PENDIENTE', () => pm.expect(j.estado).to.eql('PENDIENTE'));",
-              "pm.test('Total = 2 x 13.00', () => pm.expect(Number(j.total)).to.eql(26));",
+              "pm.test('Total = 2 x 15.00', () => pm.expect(j.total).to.eql(30));",
               "pm.test('Tiene ticket unico CDD-', () => pm.expect(j.codigoTicket).to.match(/^CDD-/));",
               "pm.collectionVariables.set('pedidoId', j.id);"
             ]
@@ -438,7 +1085,7 @@
       ]
     },
     {
-      "name": "12 POST pedido PICKUP (crear)",
+      "name": "27 POST pedido PICKUP (201)",
       "request": {
         "method": "POST",
         "header": [
@@ -460,7 +1107,7 @@
         },
         "body": {
           "mode": "raw",
-          "raw": "{\"tipoPedido\": \"PICKUP\", \"nombreCliente\": \"Ana\", \"telefonoCliente\": \"999111222\", \"detalles\": [{\"productoId\": {{productoId}}, \"cantidad\": 1}]}"
+          "raw": "{\"tipoPedido\": \"PICKUP\", \"nombreCliente\": \"Ana Perez\", \"telefonoCliente\": \"999111222\", \"detalles\": [{\"productoId\": {{productoId}}, \"cantidad\": 1}]}"
         }
       },
       "event": [
@@ -477,7 +1124,7 @@
       ]
     },
     {
-      "name": "13 POST pedido LOCAL sin mesa (422)",
+      "name": "28 POST pedido LOCAL sin mesa (422)",
       "request": {
         "method": "POST",
         "header": [
@@ -515,7 +1162,7 @@
       ]
     },
     {
-      "name": "14 POST pedido PICKUP sin telefono (422)",
+      "name": "29 POST pedido PICKUP sin telefono (422)",
       "request": {
         "method": "POST",
         "header": [
@@ -553,7 +1200,7 @@
       ]
     },
     {
-      "name": "15 POST pedido con producto inexistente (404)",
+      "name": "30 POST pedido con producto inexistente (404)",
       "request": {
         "method": "POST",
         "header": [
@@ -591,7 +1238,7 @@
       ]
     },
     {
-      "name": "16 POST pedido sin productos (400)",
+      "name": "31 POST pedido sin productos (400)",
       "request": {
         "method": "POST",
         "header": [
@@ -629,10 +1276,45 @@
       ]
     },
     {
-      "name": "17 GET pedido por id",
+      "name": "32 GET pedido por id sin token (401)",
       "request": {
         "method": "GET",
         "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos",
+            "{{pedidoId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 401', () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "33 GET pedido por id como barista (200)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenBarista}}"
+          }
+        ],
         "url": {
           "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoId}}",
           "host": [
@@ -660,7 +1342,7 @@
       ]
     },
     {
-      "name": "18 GET tracker del pedido",
+      "name": "34 GET tracker del pedido (publico)",
       "request": {
         "method": "GET",
         "header": [],
@@ -685,17 +1367,23 @@
             "type": "text/javascript",
             "exec": [
               "pm.test('Status 200', () => pm.response.to.have.status(200));",
-              "pm.test('Estado PENDIENTE y mensaje', () => { const j = pm.response.json(); pm.expect(j.estado).to.eql('PENDIENTE'); pm.expect(j.mensaje).to.be.a('string').and.not.empty; });"
+              "const j = pm.response.json();",
+              "pm.test('Estado PENDIENTE y mensaje', () => { pm.expect(j.estado).to.eql('PENDIENTE'); pm.expect(j.mensaje).to.be.a('string').and.not.empty; });"
             ]
           }
         }
       ]
     },
     {
-      "name": "19 GET pedido inexistente (404)",
+      "name": "35 GET pedido inexistente (404)",
       "request": {
         "method": "GET",
-        "header": [],
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenBarista}}"
+          }
+        ],
         "url": {
           "raw": "{{baseUrl}}/api/v1/pedidos/999999",
           "host": [
@@ -706,6 +1394,896 @@
             "v1",
             "pedidos",
             "999999"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "36 GET lista de pedidos sin token (401)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 401', () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "37 GET lista de pedidos PENDIENTES como barista (200)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenBarista}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos?estado=PENDIENTE",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos"
+          ],
+          "query": [
+            {
+              "key": "estado",
+              "value": "PENDIENTE"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Todos estan PENDIENTES', () => pm.response.json().forEach(p => pm.expect(p.estado).to.eql('PENDIENTE')));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "38 GET lista de pedidos con estado invalido (400)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenBarista}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos?estado=CANCELADO",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos"
+          ],
+          "query": [
+            {
+              "key": "estado",
+              "value": "CANCELADO"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 400', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "39 PUT estado sin token (401)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoId}}/estado",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos",
+            "{{pedidoId}}",
+            "estado"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"estado\": \"EN_PREPARACION\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 401', () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "40 PUT estado saltando a ENTREGADO (422)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenBarista}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoId}}/estado",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos",
+            "{{pedidoId}}",
+            "estado"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"estado\": \"ENTREGADO\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 422', () => pm.response.to.have.status(422));",
+              "pm.test('Indica el siguiente estado permitido', () => pm.expect(pm.response.json().mensaje).to.include('EN_PREPARACION'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "41 PUT estado a EN_PREPARACION (200)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenBarista}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoId}}/estado",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos",
+            "{{pedidoId}}",
+            "estado"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"estado\": \"EN_PREPARACION\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Estado EN_PREPARACION', () => pm.expect(pm.response.json().estado).to.eql('EN_PREPARACION'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "42 PUT estado a LISTO (200)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenBarista}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoId}}/estado",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos",
+            "{{pedidoId}}",
+            "estado"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"estado\": \"LISTO\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Estado LISTO', () => pm.expect(pm.response.json().estado).to.eql('LISTO'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "43 PUT estado a ENTREGADO (200)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenBarista}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoId}}/estado",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos",
+            "{{pedidoId}}",
+            "estado"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"estado\": \"ENTREGADO\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Estado ENTREGADO', () => pm.expect(pm.response.json().estado).to.eql('ENTREGADO'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "44 PUT estado de pedido entregado (422)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenBarista}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoId}}/estado",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos",
+            "{{pedidoId}}",
+            "estado"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"estado\": \"ENTREGADO\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 422', () => pm.response.to.have.status(422));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "45 PUT estado con valor invalido (400)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenBarista}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoId}}/estado",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos",
+            "{{pedidoId}}",
+            "estado"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"estado\": \"CANCELADO\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 400', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "46 PUT estado de pedido inexistente (404)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenBarista}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos/999999/estado",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos",
+            "999999",
+            "estado"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"estado\": \"EN_PREPARACION\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "47 GET tracker tras el cambio (ENTREGADO)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos/{{pedidoId}}/tracker",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos",
+            "{{pedidoId}}",
+            "tracker"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Estado ENTREGADO', () => pm.expect(pm.response.json().estado).to.eql('ENTREGADO'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "48 DELETE producto con pedidos (409)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAdmin}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/productos/{{productoId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "productos",
+            "{{productoId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 409', () => pm.response.to.have.status(409));",
+              "pm.test('Explica el motivo', () => pm.expect(pm.response.json().mensaje).to.include('pedidos'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "49 DELETE categoria con productos (409)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAdmin}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/categorias/{{categoriaId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "categorias",
+            "{{categoriaId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 409', () => pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "50 POST producto temporal (201)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAdmin}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/productos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "productos"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"Temporal\", \"precio\": 5.00, \"categoriaId\": {{categoriaId}}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 201', () => pm.response.to.have.status(201));",
+              "pm.collectionVariables.set('productoTmpId', pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "51 DELETE producto sin pedidos como barista (403)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenBarista}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/productos/{{productoTmpId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "productos",
+            "{{productoTmpId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 403', () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "52 DELETE producto sin pedidos como administrador (204)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAdmin}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/productos/{{productoTmpId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "productos",
+            "{{productoTmpId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 204', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "53 GET producto eliminado (404)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/productos/{{productoTmpId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "productos",
+            "{{productoTmpId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "54 DELETE producto inexistente (404)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAdmin}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/productos/999999",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "productos",
+            "999999"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "55 POST categoria vacia (201)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAdmin}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/categorias",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "categorias"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"Vacia {{catNombre}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 201', () => pm.response.to.have.status(201));",
+              "pm.collectionVariables.set('categoriaTmpId', pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "56 DELETE categoria vacia (204)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAdmin}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/categorias/{{categoriaTmpId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "categorias",
+            "{{categoriaTmpId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 204', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "57 DELETE categoria inexistente (404)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAdmin}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/categorias/999999",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "categorias",
+            "999999"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "58 GET ruta inexistente con token (404)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAdmin}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/no-existe",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "no-existe"
           ]
         }
       },

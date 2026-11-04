@@ -10,4 +10,6 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
 
     /** Base para el Dashboard KDS del Sprint 2: comandas por estado, las mas antiguas primero. */
     List<Pedido> findByEstadoOrderByFechaHoraAsc(EstadoPedido estado);
+
+    List<Pedido> findAllByOrderByFechaHoraAsc();
 }

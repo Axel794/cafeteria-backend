@@ -1,15 +1,20 @@
 package pe.edu.upn.cafeteria.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import pe.edu.upn.cafeteria.entity.Categoria;
 import pe.edu.upn.cafeteria.entity.Configuracion;
 import pe.edu.upn.cafeteria.entity.Producto;
+import pe.edu.upn.cafeteria.entity.Rol;
+import pe.edu.upn.cafeteria.entity.Usuario;
 import pe.edu.upn.cafeteria.repository.CategoriaRepository;
 import pe.edu.upn.cafeteria.repository.ConfiguracionRepository;
 import pe.edu.upn.cafeteria.repository.ProductoRepository;
+import pe.edu.upn.cafeteria.repository.UsuarioRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalTime;
@@ -17,6 +22,8 @@ import java.time.LocalTime;
 /**
  * Carga datos de PRUEBA la primera vez que se levanta la aplicacion con la base vacia.
  * Los precios y el horario son ejemplos para poder probar la API; no son datos reales del local.
+ * Tambien crea los usuarios de prueba (admin y barista) si la tabla USUARIO esta vacia; sus
+ * contrasenas se guardan cifradas con BCrypt y se pueden cambiar en application.properties.
  */
 @Component
 @Profile("!test")
@@ -25,18 +32,35 @@ public class DataLoader implements CommandLineRunner {
     private final CategoriaRepository categoriaRepository;
     private final ProductoRepository productoRepository;
     private final ConfiguracionRepository configuracionRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final String passwordAdmin;
+    private final String passwordBarista;
 
     public DataLoader(CategoriaRepository categoriaRepository,
                       ProductoRepository productoRepository,
-                      ConfiguracionRepository configuracionRepository) {
+                      ConfiguracionRepository configuracionRepository,
+                      UsuarioRepository usuarioRepository,
+                      PasswordEncoder passwordEncoder,
+                      @Value("${app.seed.admin-password}") String passwordAdmin,
+                      @Value("${app.seed.barista-password}") String passwordBarista) {
         this.categoriaRepository = categoriaRepository;
         this.productoRepository = productoRepository;
         this.configuracionRepository = configuracionRepository;
+        this.usuarioRepository = usuarioRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.passwordAdmin = passwordAdmin;
+        this.passwordBarista = passwordBarista;
     }
 
     @Override
     @Transactional
     public void run(String... args) {
+        if (usuarioRepository.count() == 0) {
+            usuarioRepository.save(usuario("admin", passwordAdmin, Rol.ADMINISTRADOR));
+            usuarioRepository.save(usuario("barista", passwordBarista, Rol.BARISTA));
+        }
+
         if (categoriaRepository.count() > 0) {
             return;
         }
@@ -60,6 +84,14 @@ public class DataLoader implements CommandLineRunner {
         configuracion.setHoraCierre(LocalTime.of(21, 0));
         configuracion.setEstadoLocal("ABIERTO");
         configuracionRepository.save(configuracion);
+    }
+
+    private Usuario usuario(String username, String passwordPlano, Rol rol) {
+        Usuario usuario = new Usuario();
+        usuario.setUsername(username);
+        usuario.setPasswordHash(passwordEncoder.encode(passwordPlano));
+        usuario.setRol(rol);
+        return usuario;
     }
 
     private Producto producto(String nombre, String descripcion, String precio,

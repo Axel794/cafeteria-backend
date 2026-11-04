@@ -2,8 +2,11 @@ package pe.edu.upn.cafeteria.controller;
 
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -14,6 +17,7 @@ import pe.edu.upn.cafeteria.service.CategoriaService;
 
 import java.util.List;
 
+/** GET es publico; POST, PUT y DELETE exigen rol ADMINISTRADOR (ver SecurityConfig). */
 @RestController
 @RequestMapping("/api/v1/categorias")
 public class CategoriaController {
@@ -29,10 +33,25 @@ public class CategoriaController {
         return categoriaService.listarActivas();
     }
 
-    // Temporalmente publico; se protegera con JWT en el Sprint 3 (HU07).
+    @GetMapping("/{id}")
+    public CategoriaResponse obtener(@PathVariable Long id) {
+        return categoriaService.obtener(id);
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public CategoriaResponse crear(@Valid @RequestBody CategoriaRequest request) {
         return categoriaService.crear(request);
+    }
+
+    @PutMapping("/{id}")
+    public CategoriaResponse actualizar(@PathVariable Long id, @Valid @RequestBody CategoriaRequest request) {
+        return categoriaService.actualizar(id, request);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void eliminar(@PathVariable Long id) {
+        categoriaService.eliminar(id);
     }
 }

@@ -2,6 +2,7 @@ package pe.edu.upn.cafeteria.exception;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -47,6 +48,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> tipoInvalido(MethodArgumentTypeMismatchException ex) {
         return construir(HttpStatus.BAD_REQUEST,
                 "El parametro '" + ex.getName() + "' tiene un valor invalido", List.of());
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> integridad(DataIntegrityViolationException ex) {
+        log.warn("Violacion de integridad de datos", ex);
+        return construir(HttpStatus.CONFLICT,
+                "La operacion viola una restriccion de la base de datos (dato duplicado o en uso)", List.of());
     }
 
     @ExceptionHandler(Exception.class)
