@@ -1,6 +1,7 @@
 package pe.edu.upn.cafeteria.controller;
 
 import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,6 +20,7 @@ import pe.edu.upn.cafeteria.service.ProductoService;
 import java.util.List;
 
 /** GET es publico; POST, PUT y DELETE exigen rol ADMINISTRADOR (ver SecurityConfig). */
+@Tag(name = "Productos")
 @RestController
 @RequestMapping("/api/v1/productos")
 public class ProductoController {

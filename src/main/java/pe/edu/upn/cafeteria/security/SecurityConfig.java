@@ -28,7 +28,8 @@ import static org.springframework.security.web.util.matcher.AntPathRequestMatche
  *
  * <pre>
  * Publico : POST /auth/login, GET categorias y productos, POST pedidos, GET pedidos/{id}/tracker
- * BARISTA o ADMINISTRADOR : GET pedidos, GET pedidos/{id}, PUT pedidos/{id}/estado
+ * Publico (documentacion) : /swagger-ui.html y /v3/api-docs
+ * BARISTA o ADMINISTRADOR : GET pedidos (incluye /historial), GET pedidos/{id}, PUT pedidos/{id}/estado
  * ADMINISTRADOR : POST, PUT y DELETE de categorias y productos
  * </pre>
  */
@@ -52,6 +53,10 @@ public class SecurityConfig {
                         .requestMatchers(antMatcher(HttpMethod.OPTIONS, "/**")).permitAll()
                         .requestMatchers(antMatcher("/h2-console/**")).permitAll() // solo desarrollo
                         .requestMatchers(antMatcher("/error")).permitAll()
+                        .requestMatchers(
+                                antMatcher("/v3/api-docs/**"),
+                                antMatcher("/swagger-ui/**"),
+                                antMatcher("/swagger-ui.html")).permitAll() // documentacion OpenAPI (PC6)
                         .requestMatchers(antMatcher(HttpMethod.POST, "/api/v1/auth/login")).permitAll()
                         .requestMatchers(
                                 antMatcher(HttpMethod.GET, "/api/v1/categorias/**"),

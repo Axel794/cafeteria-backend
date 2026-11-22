@@ -53,10 +53,15 @@ Acceso: **Público** (sin token), **Barista** (token de BARISTA o ADMINISTRADOR)
 | POST | `/pedidos` | Público | `{"tipoPedido", "numeroMesa"?, "nombreCliente"?, "telefonoCliente"?, "detalles":[{"productoId","cantidad" (1 a 20),"notas"?}]}` | 201 con ticket, estado PENDIENTE y total · 400 · 404 producto inexistente · 422 regla de negocio |
 | GET | `/pedidos/{id}/tracker` | Público | — | 200 estado y mensaje para el cliente · 404 |
 | GET | `/pedidos` | Barista | `estado?` | 200 lista (más antiguos primero) · 400 · 401 · 403 |
+| GET | `/pedidos/historial` | Barista | `page`=0, `size`=10 (1 a 50), `estado?`, `desde?` y `hasta?` (AAAA-MM-DD, inclusive), `q?` (nombre o ticket) | 200 `{contenido[], pagina, tamanio, totalElementos, totalPaginas, primera, ultima}`, más recientes primero · 400 parámetro inválido · 401 · 403 |
 | GET | `/pedidos/{id}` | Barista | — | 200 con detalle completo · 401 · 403 · 404 |
 | PUT | `/pedidos/{id}/estado` | Barista | `{"estado"}` | 200 · 400 · 401 · 403 · 404 · 422 transición no permitida |
 
 Reglas de negocio de los pedidos (422): LOCAL exige `numeroMesa` mayor que 0; PICKUP exige nombre y teléfono; no se pueden pedir productos no disponibles; el estado solo avanza un paso (PENDIENTE → EN_PREPARACION → LISTO → ENTREGADO), sin saltos ni retrocesos, y un pedido ENTREGADO no cambia más. Los subtotales y el total los calcula siempre el servidor con el precio vigente del producto.
+
+Cada fila del historial es un resumen (`id, codigoTicket, fechaHora, estado, tipoPedido, numeroMesa, nombreCliente, total, cantidadLineas`); el detalle completo se pide con `GET /pedidos/{id}`.
+
+Documentación interactiva (OpenAPI 3): `http://localhost:8080/swagger-ui.html`; JSON en `/v3/api-docs`.
 
 ## 3. Formato de errores
 

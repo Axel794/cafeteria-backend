@@ -1,5 +1,6 @@
 package pe.edu.upn.cafeteria.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -9,6 +10,7 @@ import pe.edu.upn.cafeteria.dto.LoginRequest;
 import pe.edu.upn.cafeteria.dto.LoginResponse;
 import pe.edu.upn.cafeteria.service.AuthService;
 
+@Tag(name = "Autenticacion")
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {

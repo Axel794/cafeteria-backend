@@ -1,11 +1,14 @@
 package pe.edu.upn.cafeteria.service;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.edu.upn.cafeteria.dto.DetallePedidoRequest;
 import pe.edu.upn.cafeteria.dto.DetallePedidoResponse;
+import pe.edu.upn.cafeteria.dto.PaginaResponse;
 import pe.edu.upn.cafeteria.dto.PedidoRequest;
+import pe.edu.upn.cafeteria.dto.PedidoResumenResponse;
 import pe.edu.upn.cafeteria.dto.PedidoResponse;
 import pe.edu.upn.cafeteria.dto.TrackerResponse;
 import pe.edu.upn.cafeteria.entity.DetallePedido;
@@ -19,11 +22,18 @@ import pe.edu.upn.cafeteria.repository.PedidoRepository;
 import pe.edu.upn.cafeteria.repository.ProductoRepository;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class PedidoService {
+
+    /** Tamanio de pagina por defecto del historial y maximo permitido (evita pedir todo en una sola respuesta). */
+    public static final int TAMANIO_POR_DEFECTO = 10;
+    public static final int TAMANIO_MAXIMO = 50;
 
     private final PedidoRepository pedidoRepository;
     private final ProductoRepository productoRepository;
@@ -92,6 +102,34 @@ public class PedidoService {
                 ? pedidoRepository.findAllByOrderByFechaHoraAsc()
                 : pedidoRepository.findByEstadoOrderByFechaHoraAsc(estado);
         return pedidos.stream().map(this::aRespuesta).toList();
+    }
+
+    /**
+     * PC6: historial paginado, mas recientes primero. Filtros opcionales: estado, rango de fechas
+     * (inclusive) y texto (nombre del cliente o ticket). Solo lectura.
+     */
+    @Transactional(readOnly = true)
+    public PaginaResponse<PedidoResumenResponse> historial(EstadoPedido estado, LocalDate desde, LocalDate hasta,
+                                                           String texto, int pagina, int tamanio) {
+        if (pagina < 0) {
+            throw new ReglaNegocioException(HttpStatus.BAD_REQUEST, "La pagina debe ser 0 o mayor");
+        }
+        if (tamanio < 1 || tamanio > TAMANIO_MAXIMO) {
+            throw new ReglaNegocioException(HttpStatus.BAD_REQUEST,
+                    "El tamanio de pagina debe estar entre 1 y " + TAMANIO_MAXIMO);
+        }
+        if (desde != null && hasta != null && desde.isAfter(hasta)) {
+            throw new ReglaNegocioException(HttpStatus.BAD_REQUEST,
+                    "La fecha 'desde' no puede ser posterior a 'hasta'");
+        }
+
+        List<EstadoPedido> estados = (estado == null) ? Arrays.asList(EstadoPedido.values()) : List.of(estado);
+        LocalDateTime inicio = (desde == null) ? LocalDateTime.of(1970, 1, 1, 0, 0) : desde.atStartOfDay();
+        LocalDateTime fin = (hasta == null) ? LocalDateTime.of(9999, 12, 31, 0, 0) : hasta.plusDays(1).atStartOfDay();
+        String patron = "%" + (texto == null ? "" : texto.trim().toLowerCase(Locale.ROOT)) + "%";
+
+        return PaginaResponse.de(
+                pedidoRepository.buscarHistorial(estados, inicio, fin, patron, PageRequest.of(pagina, tamanio)));
     }
 
     /**

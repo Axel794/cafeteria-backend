@@ -41,6 +41,17 @@ Ejecuta 66 pruebas de integración (MockMvc + H2 en memoria): CRUD completo, val
 
 Para probar con Postman: importar `docs/cafeteria-postman-collection.json` y ejecutarla en orden con el **Runner**, con la aplicación levantada. Cada petición trae sus verificaciones (`pm.test`); las dos primeras guardan los tokens de administrador y barista.
 
+## Documentación de la API (Swagger / OpenAPI)
+
+Con la aplicación levantada: **http://localhost:8080/swagger-ui.html** (especificación en `/v3/api-docs`). Para probar rutas protegidas: `POST /api/v1/auth/login`, copiar el token y pulsar **Authorize**.
+
+## Práctica de campo 6 (paginación, JPQL, transacciones)
+
+- **Paginación:** `GET /api/v1/pedidos/historial` devuelve `{contenido, pagina, tamanio, totalElementos, totalPaginas, primera, ultima}`; tamaño por defecto 10, máximo 50; orden fijo `fecha_hora DESC, id DESC`.
+- **JPQL con parámetros nombrados:** `PedidoRepository.buscarHistorial` (`@Query` + `@Param`), con proyección a DTO y conteo de líneas por subconsulta (sin N+1).
+- **Transacción compuesta:** `PedidoService.crear` (pedido + líneas + ticket) es atómica; `RollbackPedidoTests` fuerza una falla y comprueba que no queda nada guardado.
+- **Eficiencia:** compresión JSON y `default_batch_fetch_size` (ver `application.properties`).
+
 ## Seguridad
 
 La API usa Spring Security con JWT. Se obtiene un token con `POST /api/v1/auth/login` y se envía como `Authorization: Bearer <token>`.
@@ -72,6 +83,7 @@ Acceso: público (P), barista o administrador (B), solo administrador (A).
 | POST | `/api/v1/pedidos` | P | Registrar pedido (LOCAL o PICKUP), estado inicial PENDIENTE |
 | GET | `/api/v1/pedidos/{id}/tracker` | P | Estado del pedido para el cliente |
 | GET | `/api/v1/pedidos` | B | Comandas, filtro `estado`, las más antiguas primero |
+| GET | `/api/v1/pedidos/historial` | B | **Historial paginado** (`page`, `size` 1–50, `estado`, `desde`, `hasta`, `q`), más recientes primero |
 | GET | `/api/v1/pedidos/{id}` | B | Detalle de un pedido |
 | PUT | `/api/v1/pedidos/{id}/estado` | B | Avanzar el estado (sin saltos ni retrocesos) |
 
