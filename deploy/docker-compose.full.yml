@@ -1,0 +1,58 @@
+# Stack completo: PostgreSQL + backend Spring Boot + frontend Angular (nginx).
+# Las dos carpetas de los repositorios deben estar una junto a la otra:
+#     IdeaProjects/cafeteria-backend    (este repositorio)
+#     IdeaProjects/cafeteria-frontend
+# Uso (desde cafeteria-backend/deploy):
+#     copy .env.example .env      (y editar los valores)
+#     docker compose -f docker-compose.full.yml --env-file .env up -d --build
+# Abrir: http://localhost:8081
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cafeteria
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - cafeteria-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d cafeteria"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: ..
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://db:5432/cafeteria
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
+      SEED_BARISTA_PASSWORD: ${SEED_BARISTA_PASSWORD}
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
+    # No se publica el puerto 8080: el unico punto de entrada es nginx (frontend).
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/8080'"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 40s
+
+  frontend:
+    build: ../../cafeteria-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "8081:80"
+
+volumes:
+  cafeteria-data:

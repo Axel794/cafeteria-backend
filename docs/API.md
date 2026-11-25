@@ -104,12 +104,20 @@ Usuarios de prueba que se crean al primer arranque (solo desarrollo): `admin` / 
 2. Añadir `Authorization: Bearer <token>` en las peticiones protegidas (por ejemplo con un `HttpInterceptor`).
 3. Si la API responde 401, redirigir al login.
 
+### Seguridad en el despliegue (perfil `prod`)
+
+- Los secretos no tienen valor por defecto: `JWT_SECRET`, `DB_URL`, `DB_USER`, `DB_PASSWORD`, `SEED_ADMIN_PASSWORD` y `SEED_BARISTA_PASSWORD` llegan por variables de entorno (archivo `.env` fuera de Git, ver `deploy/.env.example`).
+- La consola H2 está desactivada, no se imprime SQL en el log y Swagger queda apagado salvo `SWAGGER_ENABLED=true`.
+- Con Docker, el puerto 8080 del backend no se publica: el único punto de entrada es nginx (frontend), que reenvía `/api/` al backend y añade cabeceras `X-Content-Type-Options`, `X-Frame-Options` y `Referrer-Policy`. El navegador habla con un solo origen, por lo que no depende de CORS.
+- Para probar rutas protegidas en Swagger: `POST /auth/login`, copiar `token`, pulsar **Authorize** y pegar solo el token.
+- Pendiente fuera del alcance del curso: HTTPS (se añade con un proxy inverso con certificado), límite de intentos de login y refresh token.
+
 ## 5. Limitaciones conocidas
 
-- La consola H2 (`/h2-console`) está abierta para desarrollo; debe desactivarse (`spring.h2.console.enabled=false`) fuera de él.
+- La consola H2 (`/h2-console`) está abierta en desarrollo; el perfil `prod` y el perfil `postgres` la desactivan.
 - No hay renovación de token (refresh token) ni cierre de sesión en el servidor: el token es válido hasta que expira.
 - No hay límite de intentos de login ni gestión de usuarios por la API; los usuarios se crean al iniciar.
 - La disponibilidad es un valor sí/no, sin control de stock por cantidad.
-- No hay paginación en los listados (adecuado para el tamaño actual de la carta).
+- Solo el historial de pedidos (`/pedidos/historial`) está paginado; los demás listados no lo necesitan con el tamaño actual de la carta y del panel.
 - Los endpoints de opciones de personalización (RF02) y el reporte del dashboard (HU09) quedan para el siguiente sprint.
 - Los datos de arranque (precios, horario) son de ejemplo.

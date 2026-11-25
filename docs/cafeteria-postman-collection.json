@@ -2298,6 +2298,198 @@
           }
         }
       ]
+    },
+    {
+      "name": "59 GET historial sin token (401)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos/historial",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos",
+            "historial"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 401', () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "60 GET historial pagina 0 de 5 como barista (200)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenBarista}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos/historial?page=0&size=5",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos",
+            "historial"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "0"
+            },
+            {
+              "key": "size",
+              "value": "5"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const r = pm.response.json();",
+              "pm.test('Trae como maximo 5 filas', () => pm.expect(r.contenido.length).to.be.at.most(5));",
+              "pm.test('Es la primera pagina y los totales son coherentes', () => { pm.expect(r.pagina).to.eql(0); pm.expect(r.primera).to.eql(true); pm.expect(r.totalPaginas).to.eql(Math.ceil(r.totalElementos / 5)); });",
+              "pm.test('Mas recientes primero', () => { for (let i = 1; i < r.contenido.length; i++) pm.expect(r.contenido[i-1].fechaHora >= r.contenido[i].fechaHora).to.eql(true); });",
+              "pm.test('Cada fila es un resumen (sin detalles)', () => r.contenido.forEach(f => pm.expect(f).to.not.have.property('detalles')));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "61 GET historial con size 51 (400)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenBarista}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos/historial?size=51",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos",
+            "historial"
+          ],
+          "query": [
+            {
+              "key": "size",
+              "value": "51"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 400', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "62 GET historial con texto malicioso (200, 0 resultados)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenBarista}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/pedidos/historial?q=' OR '1'='1' --",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "pedidos",
+            "historial"
+          ],
+          "query": [
+            {
+              "key": "q",
+              "value": "' OR '1'='1' --"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('El texto se trata como dato', () => pm.expect(pm.response.json().totalElementos).to.eql(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "63 GET documentacion OpenAPI (publica en desarrollo)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/v3/api-docs",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v3",
+            "api-docs"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Incluye el historial', () => pm.expect(pm.response.json().paths).to.have.property('/api/v1/pedidos/historial'));"
+            ]
+          }
+        }
+      ]
     }
   ]
 }

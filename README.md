@@ -52,6 +52,10 @@ Con la aplicación levantada: **http://localhost:8080/swagger-ui.html** (especif
 - **Transacción compuesta:** `PedidoService.crear` (pedido + líneas + ticket) es atómica; `RollbackPedidoTests` fuerza una falla y comprueba que no queda nada guardado.
 - **Eficiencia:** compresión JSON y `default_batch_fetch_size` (ver `application.properties`).
 
+## Despliegue (PC7)
+
+Dockerfile, perfil `prod`, `deploy/docker-compose.full.yml` (PostgreSQL + backend + frontend con nginx) y el script `deploy/verificar-disponibilidad.sh`. Pasos completos en [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md).
+
 ## Seguridad
 
 La API usa Spring Security con JWT. Se obtiene un token con `POST /api/v1/auth/login` y se envía como `Authorization: Bearer <token>`.
