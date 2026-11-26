@@ -36,6 +36,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
       SEED_BARISTA_PASSWORD: ${SEED_BARISTA_PASSWORD}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8081,http://localhost}
       SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
     # No se publica el puerto 8080: el unico punto de entrada es nginx (frontend).
     healthcheck:

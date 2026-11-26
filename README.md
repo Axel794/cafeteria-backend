@@ -126,3 +126,17 @@ src/main/java/pe/edu/upn/cafeteria
 - Reporte de ventas del dashboard (HU09).
 - Frontend en Angular que consuma esta API.
 - Control de stock por cantidad, renovación de token y paginación.
+
+## Datos de prueba y consultas SELECT (T2)
+
+El arranque carga usuarios, categorias, productos y la configuracion. Para completar las 7 tablas
+(opciones de personalizacion, pedidos y detalles) ejecute una sola vez `docs/datos-prueba.sql`
+y despues `docs/consultas-evidencia.sql` para ver los datos de cada tabla.
+
+Con Docker (carpeta `deploy`, el servicio de base de datos se llama `db` y la base `cafeteria`):
+
+    docker compose -f docker-compose.full.yml exec -T db psql -U cafeteria -d cafeteria < ../docs/datos-prueba.sql
+    docker compose -f docker-compose.full.yml exec -T db psql -U cafeteria -d cafeteria < ../docs/consultas-evidencia.sql
+
+(`cafeteria` es el valor de `DB_USER` del archivo `.env`; cambie el usuario si puso otro.)
+Con H2 (desarrollo), abra `http://localhost:8080/h2-console` y pegue el contenido de los dos archivos.
